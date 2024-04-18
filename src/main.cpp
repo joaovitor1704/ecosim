@@ -240,16 +240,69 @@ void mov_herbivoro(){
     }
 }
 
+void come_herbivoro(){
+    std::vector<int> vec_come;
+    if(linha + 1 < NUM_ROWS) {
+        if(entity_grid[linha+1][coluna].type == plant){
+        vec_come.push_back(1);
+        }
+    }
+    if(linha > 0) {
+        if(entity_grid[linha-1][coluna].type == plant){
+            vec_come.push_back(2);
+        }
+    }
+    if(coluna + 1 < NUM_ROWS) {
+        if(entity_grid[linha][coluna+1].type == plant){
+            vec_come.push_back(3);
+        }
+    }
+    if(coluna > 0) {
+        if(entity_grid[linha][coluna-1].type == plant){
+            vec_come.push_back(4);
+        }
+    }
+
+    int caso = 0;
+    if(vec_come.size() > 0){
+        int pos_vect = rand() % vec_come.size();
+        caso = vec_come[pos_vect];
+    }
+
+    switch (caso)
+    {
+    case 1:
+        entity_grid[linha+1][coluna] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 30;
+        break;
+    case 2:
+        entity_grid[linha-1][coluna] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 30;
+        break;
+    case 3:
+        entity_grid[linha][coluna+1] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 30;
+        break;
+    case 4:
+        entity_grid[linha][coluna-1] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 30;
+        break;
+    }
+}
+
 void entity_herbivoro(){
 
-    if(entity_grid[linha][coluna].age >= HERBIVORE_MAXIMUM_AGE){
+    if(entity_grid[linha][coluna].age >= HERBIVORE_MAXIMUM_AGE || entity_grid[linha][coluna].energy == 0){
         entity_grid[linha][coluna] = {empty, 0, 0};
     } 
     else {
         entity_grid[linha][coluna].age += 1;
-        /*if(rand()/double(RAND_MAX) < HERBIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
+        if(rand()/double(RAND_MAX) < HERBIVORE_EAT_PROBABILITY){
+            come_herbivoro();
+        }
+        if(rand()/double(RAND_MAX) < HERBIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
             repr_herbivoro();             
-        }*/
+        }
         if(rand()/double(RAND_MAX) < HERBIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
             mov_herbivoro();
         }
@@ -308,15 +361,124 @@ void repr_carnivoro(){
     }
 }
 
+void mov_carnivoro(){
+    std::vector<int> vec_mov;
+    entity_t carnivoro = entity_grid[linha][coluna];
+    if(linha + 1 < NUM_ROWS) {
+        if(entity_grid[linha+1][coluna].type == empty || entity_grid[linha+1][coluna].type == herbivore){
+        vec_mov.push_back(1);
+        }
+    }
+    if(linha > 0) {
+        if(entity_grid[linha-1][coluna].type == empty || entity_grid[linha-1][coluna].type == herbivore){
+            vec_mov.push_back(2);
+        }
+    }
+    if(coluna + 1 < NUM_ROWS) {
+        if(entity_grid[linha][coluna+1].type == empty || entity_grid[linha][coluna+1].type == herbivore){
+            vec_mov.push_back(3);
+        }
+    }
+    if(coluna > 0) {
+        if(entity_grid[linha][coluna-1].type == empty || entity_grid[linha][coluna-1].type == herbivore){
+            vec_mov.push_back(4);
+        }
+    }
+
+    int caso = 0;
+    if(vec_mov.size() > 0){
+        int pos_vect = rand() % vec_mov.size();
+        caso = vec_mov[pos_vect];
+    }
+
+    switch (caso)
+    {
+    case 1:
+        entity_grid[linha][coluna] = {empty, 0, 0};
+        entity_grid[linha+1][coluna] = carnivoro;
+        entity_grid[linha+1][coluna].energy -= 5;
+        break;
+    case 2:
+        entity_grid[linha][coluna] = {empty, 0, 0};
+        entity_grid[linha-1][coluna] = carnivoro;
+        entity_grid[linha-1][coluna].energy -= 5;
+        break;
+    case 3:
+        entity_grid[linha][coluna] = {empty, 0, 0};
+        entity_grid[linha][coluna+1] = carnivoro;
+        entity_grid[linha][coluna+1].energy -= 5;
+        break;
+    case 4:
+        entity_grid[linha][coluna] = {empty, 0, 0};
+        entity_grid[linha][coluna-1] = carnivoro;
+        entity_grid[linha][coluna-1].energy -= 5;
+        break;
+    }
+}
+
+void come_carnivoro(){
+    std::vector<int> vec_come;
+    if(linha + 1 < NUM_ROWS) {
+        if(entity_grid[linha+1][coluna].type == herbivore){
+        vec_come.push_back(1);
+        }
+    }
+    if(linha > 0) {
+        if(entity_grid[linha-1][coluna].type == herbivore){
+            vec_come.push_back(2);
+        }
+    }
+    if(coluna + 1 < NUM_ROWS) {
+        if(entity_grid[linha][coluna+1].type == herbivore){
+            vec_come.push_back(3);
+        }
+    }
+    if(coluna > 0) {
+        if(entity_grid[linha][coluna-1].type == herbivore){
+            vec_come.push_back(4);
+        }
+    }
+
+    int caso = 0;
+    if(vec_come.size() > 0){
+        int pos_vect = rand() % vec_come.size();
+        caso = vec_come[pos_vect];
+    }
+
+    switch (caso)
+    {
+    case 1:
+        entity_grid[linha+1][coluna] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 20;
+        break;
+    case 2:
+        entity_grid[linha-1][coluna] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 20;
+        break;
+    case 3:
+        entity_grid[linha][coluna+1] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 20;
+        break;
+    case 4:
+        entity_grid[linha][coluna-1] = {empty, 0, 0};
+        entity_grid[linha][coluna].energy += 20;
+        break;
+    }
+}
+
 void entity_carnivoro(){
 
-    if(entity_grid[linha][coluna].age >= CARNIVORE_MAXIMUM_AGE){
+    if(entity_grid[linha][coluna].age >= CARNIVORE_MAXIMUM_AGE || entity_grid[linha][coluna].energy == 0){
         entity_grid[linha][coluna] = {empty, 0, 0};
     } 
     else {
         entity_grid[linha][coluna].age += 1;
+        come_carnivoro();
         if(rand()/double(RAND_MAX) < CARNIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
             repr_carnivoro();             
+        }
+        if(rand()/double(RAND_MAX) < CARNIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
+            mov_carnivoro();
         }
     }
 }
