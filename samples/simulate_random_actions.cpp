@@ -9,6 +9,8 @@ bool random_action(float probability) {
     return dis(gen) < probability;
 }
 
+
+
 // Simulate random actions for different entities
 void simulate_random_actions() {
     // Probabilities for different actions

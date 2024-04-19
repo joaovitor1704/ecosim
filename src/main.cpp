@@ -8,6 +8,9 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
+
 
 static const uint32_t NUM_ROWS = 15;
 
@@ -80,6 +83,13 @@ namespace nlohmann
 // Grid that contains the entities
 static std::vector<std::vector<entity_t>> entity_grid;
 
+bool random_action(float probability) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    return dis(gen) < probability;
+}
+
 bool verifica_posicao(){
     pos_t pos_atual = {linha,coluna};
     bool analisado = false;
@@ -115,6 +125,9 @@ void cresc_planta(){
         }
     }
 
+    unsigned seed = time(0);
+    srand(seed);
+
     int caso = 0;
     if(vec_cresc.size() > 0){
         int pos_vect = rand() % vec_cresc.size();
@@ -147,10 +160,10 @@ void entity_planta(){
     } 
     else {
         entity_grid[linha][coluna].age += 1;
-        if(rand()/double(RAND_MAX) < PLANT_REPRODUCTION_PROBABILITY){
+        if(random_action(PLANT_REPRODUCTION_PROBABILITY)){
             cresc_planta();             
-            }
         }
+    }
     //}
     mtx.unlock();
     
@@ -179,6 +192,9 @@ void repr_herbivoro(){
             vec_repr.push_back(4);
         }
     }
+
+    unsigned seed = time(0);
+    srand(seed);
 
     int caso = 0;
     if(vec_repr.size() > 0){
@@ -230,6 +246,9 @@ void mov_herbivoro(){
             vec_mov.push_back(4);
         }
     }
+
+    unsigned seed = time(0);
+    srand(seed);
 
     int caso = 0;
     if(vec_mov.size() > 0){
@@ -295,6 +314,9 @@ void come_herbivoro(){
         }
     }
 
+    unsigned seed = time(0);
+    srand(seed);
+
     int caso = 0;
     if(vec_come.size() > 0){
         int pos_vect = rand() % vec_come.size();
@@ -330,13 +352,13 @@ void entity_herbivoro(){
     else {
         if(!verifica_posicao()){
             entity_grid[linha][coluna].age += 1;
-            if(rand()/double(RAND_MAX) < HERBIVORE_EAT_PROBABILITY){
+            if(random_action(HERBIVORE_EAT_PROBABILITY)){
                 come_herbivoro();
             }
-            if(rand()/double(RAND_MAX) < HERBIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
+            if(random_action(HERBIVORE_REPRODUCTION_PROBABILITY) && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
                 repr_herbivoro();             
             }
-            if(rand()/double(RAND_MAX) < HERBIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
+            if(random_action(HERBIVORE_MOVE_PROBABILITY) && entity_grid[linha][coluna].energy >= 5){
                 mov_herbivoro();
             }
         }
@@ -368,6 +390,9 @@ void repr_carnivoro(){
             vec_repr.push_back(4);
         }
     }
+
+    unsigned seed = time(0);
+    srand(seed);
 
     int caso = 0;
     if(vec_repr.size() > 0){
@@ -419,6 +444,9 @@ void mov_carnivoro(){
             vec_mov.push_back(4);
         }
     }
+
+    unsigned seed = time(0);
+    srand(seed);
 
     int caso = 0;
     if(vec_mov.size() > 0){
@@ -485,6 +513,9 @@ void come_carnivoro(){
         }
     }
 
+    unsigned seed = time(0);
+    srand(seed);
+
     int caso = 0;
     if(vec_come.size() > 0){
         int pos_vect = rand() % vec_come.size();
@@ -521,10 +552,10 @@ void entity_carnivoro(){
         if(!verifica_posicao()){
             entity_grid[linha][coluna].age += 1;
             come_carnivoro();
-            if(rand()/double(RAND_MAX) < CARNIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
+            if(random_action(CARNIVORE_REPRODUCTION_PROBABILITY) && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
                 repr_carnivoro();             
             }
-            if(rand()/double(RAND_MAX) < CARNIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
+            if(random_action(CARNIVORE_MOVE_PROBABILITY) && entity_grid[linha][coluna].energy >= 5){
                 mov_carnivoro();
             }
         }
@@ -603,6 +634,8 @@ int main()
         
         // <YOUR CODE HERE>
         std::vector<std::thread> threads;
+
+        
 
         for (linha = 0; linha < NUM_ROWS; linha++)
         {
