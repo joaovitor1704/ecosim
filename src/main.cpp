@@ -11,6 +11,11 @@
 
 static const uint32_t NUM_ROWS = 15;
 
+std::mutex mtx;
+
+int counter;
+
+
 // Constants
 const uint32_t PLANT_MAXIMUM_AGE = 10;
 const uint32_t HERBIVORE_MAXIMUM_AGE = 50;
@@ -46,6 +51,8 @@ struct pos_t
     uint32_t j;
 };
 
+std::vector<pos_t> posicoes;
+
 struct entity_t
 {
     entity_type_t type;
@@ -73,6 +80,17 @@ namespace nlohmann
 // Grid that contains the entities
 static std::vector<std::vector<entity_t>> entity_grid;
 
+bool verifica_posicao(){
+    pos_t pos_atual = {linha,coluna};
+    bool analisado = false;
+    for(int i = 0; i < posicoes.size(); i++)
+    {
+        if(posicoes[i].i == linha && posicoes[i].j == coluna){
+            analisado = true;
+        }
+    }
+    return analisado;
+}
 
 void cresc_planta(){
     std::vector<int> vec_cresc;
@@ -82,7 +100,6 @@ void cresc_planta(){
         }
     }
     if(linha > 0) {
-        std::cout<<linha<<" "<<coluna<<std::endl;
         if(entity_grid[linha-1][coluna].type == empty){
             vec_cresc.push_back(2);
         }
@@ -100,7 +117,7 @@ void cresc_planta(){
 
     int caso = 0;
     if(vec_cresc.size() > 0){
-        int pos_vect = rand() % vec_cresc.size() - 1;
+        int pos_vect = rand() % vec_cresc.size();
         caso = vec_cresc[pos_vect];
     }
     
@@ -122,16 +139,21 @@ void cresc_planta(){
 }
 
 void entity_planta(){
-
-    if(entity_grid[linha][coluna].age >= PLANT_MAXIMUM_AGE){
+    //while(true){
+        mtx.lock();
+        if(entity_grid[linha][coluna].age >= PLANT_MAXIMUM_AGE){
         entity_grid[linha][coluna] = {empty, 0, 0};
+        //break;
     } 
     else {
         entity_grid[linha][coluna].age += 1;
         if(rand()/double(RAND_MAX) < PLANT_REPRODUCTION_PROBABILITY){
             cresc_planta();             
+            }
         }
-    }
+    //}
+    mtx.unlock();
+    
 }
 
 
@@ -160,7 +182,7 @@ void repr_herbivoro(){
 
     int caso = 0;
     if(vec_repr.size() > 0){
-        int pos_vect = rand() % vec_repr.size() - 1;
+        int pos_vect = rand() % vec_repr.size();
         caso = vec_repr[pos_vect];
     }
     
@@ -215,27 +237,37 @@ void mov_herbivoro(){
         caso = vec_mov[pos_vect];
     }
 
+    pos_t pos;
+
     switch (caso)
     {
     case 1:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha+1][coluna] = herbivoro;
         entity_grid[linha+1][coluna].energy -= 5;
+        pos = {linha+1,coluna};
+        posicoes.push_back(pos);
         break;
     case 2:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha-1][coluna] = herbivoro;
         entity_grid[linha-1][coluna].energy -= 5;
+        pos = {linha-1,coluna};
+        posicoes.push_back(pos);
         break;
     case 3:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha][coluna+1] = herbivoro;
         entity_grid[linha][coluna+1].energy -= 5;
+        pos = {linha,coluna+1};
+        posicoes.push_back(pos);
         break;
     case 4:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha][coluna-1] = herbivoro;
         entity_grid[linha][coluna-1].energy -= 5;
+        pos = {linha,coluna-1};
+        posicoes.push_back(pos);
         break;
     }
 }
@@ -291,22 +323,26 @@ void come_herbivoro(){
 }
 
 void entity_herbivoro(){
-
+    mtx.lock();
     if(entity_grid[linha][coluna].age >= HERBIVORE_MAXIMUM_AGE || entity_grid[linha][coluna].energy == 0){
         entity_grid[linha][coluna] = {empty, 0, 0};
     } 
     else {
-        entity_grid[linha][coluna].age += 1;
-        if(rand()/double(RAND_MAX) < HERBIVORE_EAT_PROBABILITY){
-            come_herbivoro();
+        if(!verifica_posicao()){
+            entity_grid[linha][coluna].age += 1;
+            if(rand()/double(RAND_MAX) < HERBIVORE_EAT_PROBABILITY){
+                come_herbivoro();
+            }
+            if(rand()/double(RAND_MAX) < HERBIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
+                repr_herbivoro();             
+            }
+            if(rand()/double(RAND_MAX) < HERBIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
+                mov_herbivoro();
+            }
         }
-        if(rand()/double(RAND_MAX) < HERBIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
-            repr_herbivoro();             
-        }
-        if(rand()/double(RAND_MAX) < HERBIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
-            mov_herbivoro();
-        }
+        
     }
+    mtx.unlock();
 }
 
 
@@ -318,7 +354,6 @@ void repr_carnivoro(){
         }
     }
     if(linha > 0) {
-        std::cout<<linha<<" "<<coluna<<std::endl;
         if(entity_grid[linha-1][coluna].type == empty){
             vec_repr.push_back(2);
         }
@@ -336,7 +371,7 @@ void repr_carnivoro(){
 
     int caso = 0;
     if(vec_repr.size() > 0){
-        int pos_vect = rand() % vec_repr.size() - 1;
+        int pos_vect = rand() % vec_repr.size();
         caso = vec_repr[pos_vect];
     }
     
@@ -391,30 +426,41 @@ void mov_carnivoro(){
         caso = vec_mov[pos_vect];
     }
 
+    pos_t pos;
+
     switch (caso)
     {
     case 1:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha+1][coluna] = carnivoro;
         entity_grid[linha+1][coluna].energy -= 5;
+        pos = {linha+1,coluna};
+        posicoes.push_back(pos);
         break;
     case 2:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha-1][coluna] = carnivoro;
         entity_grid[linha-1][coluna].energy -= 5;
+        pos = {linha-1,coluna};
+        posicoes.push_back(pos);
         break;
     case 3:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha][coluna+1] = carnivoro;
         entity_grid[linha][coluna+1].energy -= 5;
+        pos = {linha,coluna+1};
+        posicoes.push_back(pos);
         break;
     case 4:
         entity_grid[linha][coluna] = {empty, 0, 0};
         entity_grid[linha][coluna-1] = carnivoro;
         entity_grid[linha][coluna-1].energy -= 5;
+        pos = {linha,coluna-1};
+        posicoes.push_back(pos);
         break;
     }
 }
+
 
 void come_carnivoro(){
     std::vector<int> vec_come;
@@ -467,20 +513,24 @@ void come_carnivoro(){
 }
 
 void entity_carnivoro(){
-
+    mtx.lock();
     if(entity_grid[linha][coluna].age >= CARNIVORE_MAXIMUM_AGE || entity_grid[linha][coluna].energy == 0){
         entity_grid[linha][coluna] = {empty, 0, 0};
     } 
     else {
-        entity_grid[linha][coluna].age += 1;
-        come_carnivoro();
-        if(rand()/double(RAND_MAX) < CARNIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
-            repr_carnivoro();             
+        if(!verifica_posicao()){
+            entity_grid[linha][coluna].age += 1;
+            come_carnivoro();
+            if(rand()/double(RAND_MAX) < CARNIVORE_REPRODUCTION_PROBABILITY && entity_grid[linha][coluna].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
+                repr_carnivoro();             
+            }
+            if(rand()/double(RAND_MAX) < CARNIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
+                mov_carnivoro();
+            }
         }
-        if(rand()/double(RAND_MAX) < CARNIVORE_MOVE_PROBABILITY && entity_grid[linha][coluna].energy >= 5){
-            mov_carnivoro();
-        }
+        
     }
+   mtx.unlock();
 }
 
 
@@ -552,23 +602,35 @@ int main()
         // Iterate over the entity grid and simulate the behaviour of each entity
         
         // <YOUR CODE HERE>
-        
+        std::vector<std::thread> threads;
+
         for (linha = 0; linha < NUM_ROWS; linha++)
         {
             for (coluna = 0; coluna < NUM_ROWS; coluna++)
             {
                 if(entity_grid[linha][coluna].type == plant){
-                    entity_planta();
+                    std::thread thread_planta (entity_planta);
+                    thread_planta.join();
+                    //threads.push_back(std::thread(entity_planta));
                 }
                 if(entity_grid[linha][coluna].type == herbivore){
-                    entity_herbivoro();
+                    std::thread thread_herbivoro(entity_herbivoro);
+                    thread_herbivoro.join();
+                    //threads.push_back(std::thread(entity_herbivoro));
                 }
                 if(entity_grid[linha][coluna].type == carnivore){
-                    entity_carnivoro();
+                    std::thread thread_carnivoro(entity_carnivoro);
+                    thread_carnivoro.join();
+                    //threads.push_back(std::thread(entity_carnivoro));
+                    
                 }
             }
         }
-        
+        posicoes.clear();
+        /*for (int i=0; i< threads.size(); ++i)
+	    {
+	    	threads[i].join();
+	    }*/
 
         // Return the JSON representation of the entity grid
         nlohmann::json json_grid = entity_grid; 
