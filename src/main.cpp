@@ -15,8 +15,8 @@
 static const uint32_t NUM_ROWS = 15;
 
 std::mutex mtx;
-
-int counter;
+std::condition_variable cv_thread;
+bool thread_ativa = false;
 
 
 // Constants
@@ -34,8 +34,6 @@ const double HERBIVORE_MOVE_PROBABILITY = 0.7;
 const double HERBIVORE_EAT_PROBABILITY = 0.9;
 const double CARNIVORE_MOVE_PROBABILITY = 0.5;
 const double CARNIVORE_EAT_PROBABILITY = 1.0;
-
-
 
 
 // Type definitions
@@ -161,7 +159,12 @@ void cresc_planta(uint32_t i, uint32_t j){
 }
 
 void entity_planta(uint32_t i, uint32_t j){
-    mtx.lock();
+    std::unique_lock lk(mtx);
+
+    while(!thread_ativa){
+        cv_thread.wait(lk);
+    }
+
     if(entity_grid[i][j].age >= PLANT_MAXIMUM_AGE){
         entity_grid[i][j] = {empty, 0, 0};
     } 
@@ -171,7 +174,6 @@ void entity_planta(uint32_t i, uint32_t j){
             cresc_planta(i, j);             
         }
     }
-    mtx.unlock();
     
 }
 
@@ -361,7 +363,12 @@ void come_herbivoro(uint32_t i, uint32_t j){
 }
 
 void entity_herbivoro(uint32_t i, uint32_t j){
-    mtx.lock();
+    std::unique_lock lk(mtx);
+
+    while(!thread_ativa){
+        cv_thread.wait(lk);
+    }
+
     if(entity_grid[i][j].age >= HERBIVORE_MAXIMUM_AGE || entity_grid[i][j].energy == 0){
         entity_grid[i][j] = {empty, 0, 0};
     } 
@@ -380,7 +387,6 @@ void entity_herbivoro(uint32_t i, uint32_t j){
         }
         
     }
-    mtx.unlock();
 }
 
 
@@ -571,7 +577,12 @@ void come_carnivoro(uint32_t i, uint32_t j){
 }
 
 void entity_carnivoro(uint32_t i, uint32_t j){
-    mtx.lock();
+    std::unique_lock lk(mtx);
+
+    while(!thread_ativa){
+        cv_thread.wait(lk);
+    }
+
     if(entity_grid[i][j].age >= CARNIVORE_MAXIMUM_AGE || entity_grid[i][j].energy == 0){
         entity_grid[i][j] = {empty, 0, 0};
     } 
@@ -625,6 +636,8 @@ int main()
         
         // Create the entities
         // <YOUR CODE HERE>
+        mtx.lock();
+
         int num_plants = (uint32_t)request_body["plants"];
         int num_herbivores = (uint32_t)request_body["herbivores"];
         int num_carnivores = (uint32_t)request_body["carnivores"];
@@ -650,6 +663,8 @@ int main()
             entity_grid[pos.i][pos.j] = {carnivore, 100, 0};
         }
 
+        mtx.unlock();
+
         // Return the JSON representation of the entity grid
         nlohmann::json json_grid = entity_grid; 
         res.body = json_grid.dump();
@@ -665,35 +680,42 @@ int main()
         // <YOUR CODE HERE>
         std::vector<std::thread> threads;
 
-        
+        mtx.lock();
+        posicoes.clear();
 
         for (uint32_t i = 0; i < NUM_ROWS; i++)
         {
             for (uint32_t j = 0; j < NUM_ROWS; j++)
             {
                 if(entity_grid[i][j].type == plant){
-                    std::thread thread_planta (entity_planta, i, j);
-                    thread_planta.join();
-                    //threads.push_back(std::thread(entity_planta));
+                    /*std::thread thread_planta (entity_planta, i, j);
+                    thread_planta.join();*/
+                    threads.push_back(std::thread(entity_planta, i, j));
                 }
                 if(entity_grid[i][j].type == herbivore){
-                    std::thread thread_herbivoro(entity_herbivoro, i, j);
-                    thread_herbivoro.join();
-                    //threads.push_back(std::thread(entity_herbivoro));
+                    /*std::thread thread_herbivoro(entity_herbivoro, i, j);
+                    thread_herbivoro.join();*/
+                    threads.push_back(std::thread(entity_herbivoro, i, j));
                 }
                 if(entity_grid[i][j].type == carnivore){
-                    std::thread thread_carnivoro(entity_carnivoro, i, j);
-                    thread_carnivoro.join();
-                    //threads.push_back(std::thread(entity_carnivoro));
+                    /*std::thread thread_carnivoro(entity_carnivoro, i, j);
+                    thread_carnivoro.join();*/
+                    threads.push_back(std::thread(entity_carnivoro, i, j));
                     
                 }
             }
         }
-        posicoes.clear();
-        /*for (int i=0; i< threads.size(); ++i)
+
+        thread_ativa = true;
+        mtx.unlock();
+        cv_thread.notify_all();
+        
+        for (int i=0; i< threads.size(); ++i)
 	    {
 	    	threads[i].join();
-	    }*/
+	    }
+        
+        thread_ativa = false;
 
         // Return the JSON representation of the entity grid
         nlohmann::json json_grid = entity_grid; 
