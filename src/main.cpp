@@ -398,25 +398,36 @@ void repr_carnivoro(){
     if(vec_repr.size() > 0){
         int pos_vect = rand() % vec_repr.size();
         caso = vec_repr[pos_vect];
+        
     }
     
+    pos_t pos;
+
     switch (caso)
     {
     case 1:
         entity_grid[linha+1][coluna] = {carnivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha+1,coluna};
+        posicoes.push_back(pos);
         break;
     case 2:
         entity_grid[linha-1][coluna] = {carnivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha-1,coluna};
+        posicoes.push_back(pos);
         break;
     case 3:
         entity_grid[linha][coluna+1] = {carnivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha,coluna+1};
+        posicoes.push_back(pos);
         break;
     case 4:
         entity_grid[linha][coluna-1] = {carnivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha,coluna-1};
+        posicoes.push_back(pos);
         break;
     }
 }
@@ -601,6 +612,9 @@ int main()
         int num_plants = (uint32_t)request_body["plants"];
         int num_herbivores = (uint32_t)request_body["herbivores"];
         int num_carnivores = (uint32_t)request_body["carnivores"];
+
+        unsigned seed = time(0);
+        srand(seed);
 
         for (int i = 0; i < num_plants; i++)
         {
