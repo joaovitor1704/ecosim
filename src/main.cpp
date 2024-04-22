@@ -133,30 +133,38 @@ void cresc_planta(){
         int pos_vect = rand() % vec_cresc.size();
         caso = vec_cresc[pos_vect];
     }
+
+    pos_t pos;
     
     switch (caso)
     {
     case 1:
         entity_grid[linha+1][coluna] = {plant, 0, 0};
+        pos = {linha+1,coluna};
+        posicoes.push_back(pos);
         break;
     case 2:
         entity_grid[linha-1][coluna] = {plant, 0, 0};
+        pos = {linha-1,coluna};
+        posicoes.push_back(pos);
         break;
     case 3:
         entity_grid[linha][coluna+1] = {plant, 0, 0};
+        pos = {linha,coluna+1};
+        posicoes.push_back(pos);
         break;
     case 4:
         entity_grid[linha][coluna-1] = {plant, 0, 0};
+        pos = {linha,coluna-1};
+        posicoes.push_back(pos);
         break;
     }
 }
 
 void entity_planta(){
-    //while(true){
-        mtx.lock();
-        if(entity_grid[linha][coluna].age >= PLANT_MAXIMUM_AGE){
+    mtx.lock();
+    if(entity_grid[linha][coluna].age >= PLANT_MAXIMUM_AGE){
         entity_grid[linha][coluna] = {empty, 0, 0};
-        //break;
     } 
     else {
         entity_grid[linha][coluna].age += 1;
@@ -201,24 +209,34 @@ void repr_herbivoro(){
         int pos_vect = rand() % vec_repr.size();
         caso = vec_repr[pos_vect];
     }
+
+    pos_t pos;
     
     switch (caso)
     {
     case 1:
         entity_grid[linha+1][coluna] = {herbivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha+1,coluna};
+        posicoes.push_back(pos);
         break;
     case 2:
         entity_grid[linha-1][coluna] = {herbivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha-1,coluna};
+        posicoes.push_back(pos);
         break;
     case 3:
         entity_grid[linha][coluna+1] = {herbivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha,coluna+1};
+        posicoes.push_back(pos);
         break;
     case 4:
         entity_grid[linha][coluna-1] = {herbivore, 100, 0};
         entity_grid[linha][coluna].energy -= 10;
+        pos = {linha,coluna-1};
+        posicoes.push_back(pos);
         break;
     }
 }
