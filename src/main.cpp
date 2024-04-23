@@ -173,8 +173,7 @@ void entity_planta(uint32_t i, uint32_t j){
         if(random_action(PLANT_REPRODUCTION_PROBABILITY)){
             cresc_planta(i, j);             
         }
-    }
-    
+    } 
 }
 
 
@@ -373,19 +372,16 @@ void entity_herbivoro(uint32_t i, uint32_t j){
         entity_grid[i][j] = {empty, 0, 0};
     } 
     else {
-        if(!verifica_posicao(i, j)){
-            entity_grid[i][j].age += 1;
-            if(random_action(HERBIVORE_EAT_PROBABILITY)){
-                come_herbivoro(i, j);
-            }
-            if(random_action(HERBIVORE_REPRODUCTION_PROBABILITY) && entity_grid[i][j].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
-                repr_herbivoro(i, j);             
-            }
-            if(random_action(HERBIVORE_MOVE_PROBABILITY) && entity_grid[i][j].energy >= 5){
-                mov_herbivoro(i, j);
-            }
+        entity_grid[i][j].age += 1;
+        if(random_action(HERBIVORE_EAT_PROBABILITY)){
+            come_herbivoro(i, j);
         }
-        
+        if(random_action(HERBIVORE_REPRODUCTION_PROBABILITY) && entity_grid[i][j].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
+            repr_herbivoro(i, j);             
+        }
+        if(random_action(HERBIVORE_MOVE_PROBABILITY) && entity_grid[i][j].energy >= 5){
+            mov_herbivoro(i, j);
+        } 
     }
 }
 
@@ -587,19 +583,15 @@ void entity_carnivoro(uint32_t i, uint32_t j){
         entity_grid[i][j] = {empty, 0, 0};
     } 
     else {
-        if(!verifica_posicao(i, j)){
-            entity_grid[i][j].age += 1;
-            come_carnivoro(i, j);
-            if(random_action(CARNIVORE_REPRODUCTION_PROBABILITY) && entity_grid[i][j].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
-                repr_carnivoro(i, j);             
-            }
-            if(random_action(CARNIVORE_MOVE_PROBABILITY) && entity_grid[i][j].energy >= 5){
-                mov_carnivoro(i, j);
-            }
+        entity_grid[i][j].age += 1;
+        come_carnivoro(i, j);
+        if(random_action(CARNIVORE_REPRODUCTION_PROBABILITY) && entity_grid[i][j].energy >= THRESHOLD_ENERGY_FOR_REPRODUCTION){
+            repr_carnivoro(i, j);             
         }
-        
+        if(random_action(CARNIVORE_MOVE_PROBABILITY) && entity_grid[i][j].energy >= 5){
+            mov_carnivoro(i, j);
+        }
     }
-   mtx.unlock();
 }
 
 
@@ -636,7 +628,6 @@ int main()
         
         // Create the entities
         // <YOUR CODE HERE>
-        mtx.lock();
 
         int num_plants = (uint32_t)request_body["plants"];
         int num_herbivores = (uint32_t)request_body["herbivores"];
@@ -663,8 +654,6 @@ int main()
             entity_grid[pos.i][pos.j] = {carnivore, 100, 0};
         }
 
-        mtx.unlock();
-
         // Return the JSON representation of the entity grid
         nlohmann::json json_grid = entity_grid; 
         res.body = json_grid.dump();
@@ -681,25 +670,18 @@ int main()
         std::vector<std::thread> threads;
 
         mtx.lock();
-        posicoes.clear();
 
         for (uint32_t i = 0; i < NUM_ROWS; i++)
         {
             for (uint32_t j = 0; j < NUM_ROWS; j++)
             {
                 if(entity_grid[i][j].type == plant){
-                    /*std::thread thread_planta (entity_planta, i, j);
-                    thread_planta.join();*/
                     threads.push_back(std::thread(entity_planta, i, j));
                 }
                 if(entity_grid[i][j].type == herbivore){
-                    /*std::thread thread_herbivoro(entity_herbivoro, i, j);
-                    thread_herbivoro.join();*/
                     threads.push_back(std::thread(entity_herbivoro, i, j));
                 }
                 if(entity_grid[i][j].type == carnivore){
-                    /*std::thread thread_carnivoro(entity_carnivoro, i, j);
-                    thread_carnivoro.join();*/
                     threads.push_back(std::thread(entity_carnivoro, i, j));
                     
                 }
